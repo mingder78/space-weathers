@@ -37,5 +37,16 @@ try {
   }
 } catch (err) {
   console.error("Failed to fetch Mars weather:", (err as Error).message);
-  process.exit(1);
 }
+
+// 🌕 Moon "Weather" — no atmosphere, so we use known surface conditions
+console.log("");
+console.log("🌕 Moon Surface Conditions");
+console.log("─".repeat(35));
+console.log("🌡️  Temperature:");
+console.log("   Dayside:  up to  127°C ( 260°F)");
+console.log("   Nightside: down to -173°C (-280°F)");
+console.log("💨 Pressure: ~3 × 10⁻¹⁵ atm (essentially vacuum)");
+console.log("🌬️  Wind Speed: N/A (no atmosphere)");
+console.log("ℹ️  The Moon has no atmosphere, so there is no weather in the");
+console.log("   traditional sense. Temperatures vary with solar exposure.");
