@@ -1,5 +1,17 @@
 # mars weathers
 
+## users
+
+```
+bunx space-weathers
+
+//or
+
+npm -g i space-weathers
+```
+
+## 100% ai generated code
+
 ```
  Updated index.ts to fetch and display Mars weather from NASA's InSight API:
 
