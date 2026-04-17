@@ -1,0 +1,17 @@
+{
+  "name": "b",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "scripts": {
+    "dev": "bun --hot index.ts",
+    "start": "bun index.ts",
+    "test": "bun test"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}
