@@ -1,4 +1,5 @@
 /* eslint-disable no-console */
+
 const API_KEY = process.env.NASA_API_KEY ?? 'DEMO_KEY'
 
 type MarsSolAT = { av: number; mn: number; mx: number }
@@ -54,6 +55,10 @@ async function fetchMarsWeather (): Promise<void> {
     console.log('  Last known surface temp: avg ~ -60°C (-76°F)')
   } else {
     const latestSol = sols[sols.length - 1]
+    if (latestSol === undefined) {
+      throw new Error('latestSol is undefined')
+    }
+
     const s = data[latestSol] ?? ({} as MarsSol)
 
     console.log(`  Sol ${latestSol}`)
@@ -72,7 +77,7 @@ async function fetchMarsWeather (): Promise<void> {
 async function fetchSunWeather (): Promise<void> {
   const today = new Date()
   const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)
-  const fmt = (d: Date): string => d.toISOString().split('T')[0]
+  const fmt = (d: Date): string => d.toISOString().slice(0, 10)
 
   const flareRes = await fetchWithRetry(`https://api.nasa.gov/DONKI/FLR?startDate=${fmt(weekAgo)}&endDate=${fmt(today)}&api_key=${API_KEY}`)
   const stormRes = await fetchWithRetry(`https://api.nasa.gov/DONKI/GST?startDate=${fmt(weekAgo)}&endDate=${fmt(today)}&api_key=${API_KEY}`)
@@ -110,6 +115,11 @@ async function fetchSunWeather (): Promise<void> {
   if (cmes.length > 0) {
     console.log(`  💥 Coronal Mass Ejections: ${cmes.length} detected`)
     const latest = cmes[cmes.length - 1]
+
+    if (!latest) {
+      throw new Error('latest is undefined')
+    }
+
     if (latest.cmeAnalyses?.[0]?.speed) {
       console.log(`     Latest speed: ${latest.cmeAnalyses[0].speed} km/s`)
     }
@@ -138,7 +148,7 @@ function getMoonPhase (): { name: string; illumination: number; emoji: string } 
 async function fetchMoonWeather (): Promise<void> {
   const today = new Date()
   const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)
-  const fmt = (d: Date): string => d.toISOString().split('T')[0]
+  const fmt = (d: Date): string => d.toISOString().slice(0, 10)
 
   const neoRes = await fetchWithRetry(`https://api.nasa.gov/neo/rest/v1/feed?start_date=${fmt(weekAgo)}&end_date=${fmt(today)}&api_key=${API_KEY}`)
 
@@ -172,7 +182,12 @@ async function fetchMoonWeather (): Promise<void> {
       const distB = parseFloat(b.close_approach_data?.[0]?.miss_distance?.kilometers ?? 'Infinity')
       return distA < distB ? a : b
     }, {} as NeoObject)
-    const dist = parseFloat(closest.close_approach_data?.[0]?.miss_distance?.lunar ?? '0')
+    const lunar = closest.close_approach_data?.[0]?.miss_distance?.lunar
+    const dist =
+  typeof lunar === 'number'
+    ? lunar
+    : parseFloat(lunar ?? '0')
+
     console.log(`     Closest hazardous: ${closest.name} (${dist.toFixed(2)} lunar distances)`)
   }
 }
