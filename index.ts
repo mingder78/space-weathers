@@ -21,7 +21,7 @@ async function fetchMarsWeather() {
   const res = await fetchWithRetry(url);
   if (!res.ok) throw new Error(`API error: ${res.status}`);
 
-  const data = await res.json();
+  const data = await res.json() as { sol_keys: string[]; [key: string]: any };
   const sols = data.sol_keys;
 
   console.log("🔴 Mars Weather Report");
@@ -32,17 +32,22 @@ async function fetchMarsWeather() {
     console.log("  Last known surface temp: avg ~ -60°C (-76°F)");
   } else {
     const latestSol = sols[sols.length - 1];
-    const s = data[latestSol];
+    // Ensure latestSol is a valid key before accessing data
+    if (latestSol && data[latestSol]) {
+      const s = data[latestSol];
 
-    console.log(`  Sol ${latestSol}`);
-    if (s.AT) {
-      console.log(`  🌡️  Temp:  avg ${s.AT.av.toFixed(1)}°C | min ${s.AT.mn.toFixed(1)}°C | max ${s.AT.mx.toFixed(1)}°C`);
-    }
-    if (s.PRE) {
-      console.log(`  💨 Pressure: ${s.PRE.av.toFixed(1)} Pa`);
-    }
-    if (s.HWS) {
-      console.log(`  🌬️  Wind: ${s.HWS.av.toFixed(1)} m/s`);
+      console.log(`  Sol ${latestSol}`);
+      if (s.AT) {
+        console.log(`  🌡️  Temp:  avg ${s.AT.av.toFixed(1)}°C | min ${s.AT.mn.toFixed(1)}°C | max ${s.AT.mx.toFixed(1)}°C`);
+      }
+      if (s.PRE) {
+        console.log(`  💨 Pressure: ${s.PRE.av.toFixed(1)} Pa`);
+      }
+      if (s.HWS) {
+        console.log(`  🌬️  Wind: ${s.HWS.av.toFixed(1)} m/s`);
+      }
+    } else {
+      console.log("  No valid Mars sol data found for the latest entry.");
     }
   }
 }
@@ -154,7 +159,7 @@ async function fetchMoonWeather() {
 
   // NEO data
   if (neoRes.ok) {
-    const neoData = await neoRes.json() as any;
+    const neoData = await neoRes.json() as { element_count: number; near_earth_objects: { [date: string]: any[] }; };
     const totalNeos = neoData.element_count || 0;
     const allNeos = Object.values(neoData.near_earth_objects || {}).flat() as any[];
     const hazardous = allNeos.filter((n: any) => n.is_potentially_hazardous_asteroid);
