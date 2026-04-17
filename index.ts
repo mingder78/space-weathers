@@ -1,3 +1,5 @@
+#!/usr/bin/env bun
+
 const API_KEY = process.env.NASA_API_KEY || "DEMO_KEY";
 
 async function fetchWithRetry(url: string, retries = 3, delayMs = 2000): Promise<Response> {
@@ -98,16 +100,76 @@ async function fetchSunWeather() {
   }
 }
 
-function printMoonWeather() {
-  console.log("\n🌕 Moon Surface Conditions");
+function getMoonPhase(): { name: string; illumination: number; emoji: string } {
+  // Calculate moon phase using synodic month
+  const now = new Date();
+  // Known new moon: Jan 6, 2000 18:14 UTC
+  const knownNewMoon = new Date("2000-01-06T18:14:00Z");
+  const synodicMonth = 29.53058770576;
+  const daysSince = (now.getTime() - knownNewMoon.getTime()) / (1000 * 60 * 60 * 24);
+  const phase = ((daysSince % synodicMonth) + synodicMonth) % synodicMonth;
+  const fraction = phase / synodicMonth;
+  const illumination = 0.5 * (1 - Math.cos(2 * Math.PI * fraction));
+
+  let name: string;
+  let emoji: string;
+  if (fraction < 0.0625)      { name = "New Moon";         emoji = "🌑"; }
+  else if (fraction < 0.1875) { name = "Waxing Crescent";  emoji = "🌒"; }
+  else if (fraction < 0.3125) { name = "First Quarter";    emoji = "🌓"; }
+  else if (fraction < 0.4375) { name = "Waxing Gibbous";   emoji = "🌔"; }
+  else if (fraction < 0.5625) { name = "Full Moon";        emoji = "🌕"; }
+  else if (fraction < 0.6875) { name = "Waning Gibbous";   emoji = "🌖"; }
+  else if (fraction < 0.8125) { name = "Third Quarter";    emoji = "🌗"; }
+  else if (fraction < 0.9375) { name = "Waning Crescent";  emoji = "🌘"; }
+  else                        { name = "New Moon";         emoji = "🌑"; }
+
+  return { name, illumination, emoji };
+}
+
+async function fetchMoonWeather() {
+  const today = new Date();
+  const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const fmt = (d: Date) => d.toISOString().split("T")[0];
+
+  // Fetch near-Earth objects from NASA
+  const neoRes = await fetchWithRetry(
+    `https://api.nasa.gov/neo/rest/v1/feed?start_date=${fmt(weekAgo)}&end_date=${fmt(today)}&api_key=${API_KEY}`
+  );
+
+  const moon = getMoonPhase();
+
+  console.log("\n🌙 Moon Report");
   console.log("─".repeat(40));
-  console.log("  🌡️  Temperature:");
-  console.log("     Dayside:  up to  127°C ( 260°F)");
-  console.log("     Nightside: down to -173°C (-280°F)");
-  console.log("  💨 Pressure: ~3 × 10⁻¹⁵ atm (essentially vacuum)");
-  console.log("  🌬️  Wind Speed: N/A (no atmosphere)");
-  console.log("  ℹ️  The Moon has no atmosphere, so there is no weather in the");
-  console.log("     traditional sense. Temperatures vary with solar exposure.");
+
+  // Moon phase
+  console.log(`  ${moon.emoji} Phase: ${moon.name}`);
+  console.log(`  💡 Illumination: ${(moon.illumination * 100).toFixed(1)}%`);
+
+  // Surface temp estimate based on illumination
+  const dayTemp = Math.round(127 * moon.illumination);
+  const nightTemp = Math.round(-173 * (1 - moon.illumination * 0.3));
+  console.log(`  🌡️  Est. Surface Temp:`);
+  console.log(`     Sunlit side:  ~${dayTemp}°C`);
+  console.log(`     Dark side:    ~${nightTemp}°C`);
+
+  // NEO data
+  if (neoRes.ok) {
+    const neoData = await neoRes.json() as any;
+    const totalNeos = neoData.element_count || 0;
+    const allNeos = Object.values(neoData.near_earth_objects || {}).flat() as any[];
+    const hazardous = allNeos.filter((n: any) => n.is_potentially_hazardous_asteroid);
+    console.log(`  ☄️  Near-Earth Objects (past 7 days): ${totalNeos}`);
+    console.log(`     Potentially hazardous: ${hazardous.length}`);
+    if (hazardous.length > 0) {
+      const closest = hazardous.reduce((a: any, b: any) => {
+        const distA = parseFloat(a.close_approach_data?.[0]?.miss_distance?.kilometers || "Infinity");
+        const distB = parseFloat(b.close_approach_data?.[0]?.miss_distance?.kilometers || "Infinity");
+        return distA < distB ? a : b;
+      });
+      const dist = parseFloat(closest.close_approach_data?.[0]?.miss_distance?.lunar || "0");
+      console.log(`     Closest hazardous: ${closest.name} (${dist.toFixed(2)} lunar distances)`);
+    }
+  }
 }
 
 try {
@@ -117,4 +179,4 @@ try {
   console.error("Failed to fetch weather:", (err as Error).message);
 }
 
-printMoonWeather();
+await fetchMoonWeather();
