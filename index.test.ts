@@ -1,8 +1,8 @@
-import { test, expect } from "bun:test";
+import { test, expect } from 'bun:test'
 
-test("example test", () => {
-  expect(1 + 1).toBe(2);
-});
+test('example test', () => {
+  expect(1 + 1).toBe(2)
+})
 
 // You can add more tests here later, for example:
 // import { fetchMarsWeather } from "./index.ts"; // Assuming you export functions from index.ts
