@@ -1,0 +1,11 @@
+node_modules
+bun.lockb
+.env
+.env.local
+.env.*.local
+.git
+.github
+README.md
+.env.example
+*.test.ts
+*.spec.ts

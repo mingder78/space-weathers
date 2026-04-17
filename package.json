@@ -8,7 +8,8 @@
     "space-weathers": "index.ts"
   },
   "files": [
-    "index.ts"
+    "index.ts",
+    "dist"
   ],
   "keywords": [
     "space",
@@ -25,13 +26,27 @@
     "type": "git",
     "url": "git+https://github.com/mingder78/pi_setting.git"
   },
+
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "aegir": "^47.1.5"
   },
   "scripts": {
     "dev": "bun --hot index.ts",
     "start": "bun index.ts",
-    "test": "bun test"
+    "test": "bun test",
+    "build": "aegir build",
+    "lint": "aegir lint",
+    "release": "aegir release"
+  },
+  "aegir": {
+    "version": "minor",
+    "registry": "https://registry.npmjs.org",
+    "github": {
+      "release": true,
+      "assets": true,
+      "draft": false
+    }
   },
   "peerDependencies": {
     "typescript": "^5"
