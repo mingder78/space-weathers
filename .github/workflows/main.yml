@@ -1,0 +1,25 @@
+   name: CI/CD
+   on:
+     push:
+       branches:
+         - main
+
+   jobs:
+     build:
+       runs-on: ubuntu-latest
+
+       steps:
+       - uses: actions/checkout@v2
+       - uses: actions/setup-node@v1
+         with:
+           node-version: 'bun'
+           cache-path: '$(github.workspace)/.npm'
+
+       - name: Install dependencies
+         run: bun install --run-with --
+
+       - name: Test
+         run: bun test
+
+       - name: Build
+         run: bun build
