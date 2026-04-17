@@ -1,3 +1,16 @@
+# mars weathers
+
+```
+ Updated index.ts to fetch and display Mars weather from NASA's InSight API:
+
+ - 🌡️ Temperature — avg, min, max in °C
+ - 💨 Pressure in Pascals
+ - 🌬️ Wind Speed in m/s
+
+ Uses DEMO_KEY by default, or set NASA_API_KEY env var for higher rate limits.
+
+```
+
 # b
 
 To install dependencies:
