@@ -1,8 +1,22 @@
 const API_KEY = process.env.NASA_API_KEY || "DEMO_KEY";
 
+async function fetchWithRetry(url: string, retries = 3, delayMs = 2000): Promise<Response> {
+  for (let i = 0; i < retries; i++) {
+    const res = await fetch(url);
+    if (res.status === 429 && i < retries - 1) {
+      const wait = delayMs * (i + 1);
+      console.error(`  ⏳ Rate limited, retrying in ${wait / 1000}s...`);
+      await new Promise((r) => setTimeout(r, wait));
+      continue;
+    }
+    return res;
+  }
+  throw new Error("Max retries exceeded");
+}
+
 async function fetchMarsWeather() {
   const url = `https://api.nasa.gov/insight_weather/?api_key=${API_KEY}&feedtype=json&ver=1.0`;
-  const res = await fetch(url);
+  const res = await fetchWithRetry(url);
   if (!res.ok) throw new Error(`API error: ${res.status}`);
 
   const data = await res.json();
@@ -36,11 +50,9 @@ async function fetchSunWeather() {
   const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
   const fmt = (d: Date) => d.toISOString().split("T")[0];
 
-  const [flareRes, stormRes, cmeRes] = await Promise.all([
-    fetch(`https://api.nasa.gov/DONKI/FLR?startDate=${fmt(weekAgo)}&endDate=${fmt(today)}&api_key=${API_KEY}`),
-    fetch(`https://api.nasa.gov/DONKI/GST?startDate=${fmt(weekAgo)}&endDate=${fmt(today)}&api_key=${API_KEY}`),
-    fetch(`https://api.nasa.gov/DONKI/CME?startDate=${fmt(weekAgo)}&endDate=${fmt(today)}&api_key=${API_KEY}`),
-  ]);
+  const flareRes = await fetchWithRetry(`https://api.nasa.gov/DONKI/FLR?startDate=${fmt(weekAgo)}&endDate=${fmt(today)}&api_key=${API_KEY}`);
+  const stormRes = await fetchWithRetry(`https://api.nasa.gov/DONKI/GST?startDate=${fmt(weekAgo)}&endDate=${fmt(today)}&api_key=${API_KEY}`);
+  const cmeRes = await fetchWithRetry(`https://api.nasa.gov/DONKI/CME?startDate=${fmt(weekAgo)}&endDate=${fmt(today)}&api_key=${API_KEY}`);
 
   const [flares, storms, cmes] = await Promise.all([
     flareRes.json() as Promise<any[]>,
@@ -99,7 +111,8 @@ function printMoonWeather() {
 }
 
 try {
-  await Promise.all([fetchMarsWeather(), fetchSunWeather()]);
+  await fetchMarsWeather();
+  await fetchSunWeather();
 } catch (err) {
   console.error("Failed to fetch weather:", (err as Error).message);
 }
